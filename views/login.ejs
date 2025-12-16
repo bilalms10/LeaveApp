@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Leave Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);">
+    <div class="container-xs" style="min-height: 100vh; display: flex; align-items: center;">
+        <div class="card card-premium" style="width: 100%;">
+            <div class="card-header text-center">
+                <h2 class="mb-1" style="color: var(--primary-blue);">Leave Management System</h2>
+                <p class="text-gold mb-0">Sign in to your account</p>
+            </div>
+            
+            <div class="card-body">
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="alert alert-error">
+                        <strong>Error:</strong> <%= error %>
+                    </div>
+                <% } %>
+                
+                <form method="POST" action="/login">
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-gold btn-lg" style="width: 100%;">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+            
+            <div class="card-footer text-center">
+                <p class="text-muted mb-0">
+                    <small>Contact your administrator for account access</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

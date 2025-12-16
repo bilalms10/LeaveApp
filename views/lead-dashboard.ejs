@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Dashboard - Leave Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">Leave Management System</div>
+            <div class="navbar-nav">
+                <a href="/lead-dashboard" class="nav-link active">Dashboard</a>
+                <a href="/employees" class="nav-link">Employees</a>
+                <a href="/add-employee" class="nav-link">Add Employee</a>
+                <a href="/chat" class="nav-link">Team Chat</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Welcome Header -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h1 class="mb-1">Lead Dashboard</h1>
+                <p class="text-muted mb-0">Welcome, <%= userName %> - Manage team leave requests</p>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-gold mb-2"><%= leaves.length %></h2>
+                        <p class="text-muted mb-0">Total Applications</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-warning mb-2"><%= leaves.filter(l => l.status === 'pending').length %></h2>
+                        <p class="text-muted mb-0">Pending Review</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-success mb-2"><%= leaves.filter(l => l.status === 'approved').length %></h2>
+                        <p class="text-muted mb-0">Approved</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Applications -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Leave Applications</h3>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-secondary btn-sm" onclick="filterLeaves('all')">All</button>
+                    <button class="btn btn-secondary btn-sm" onclick="filterLeaves('pending')">Pending</button>
+                    <button class="btn btn-secondary btn-sm" onclick="filterLeaves('approved')">Approved</button>
+                    <button class="btn btn-secondary btn-sm" onclick="filterLeaves('rejected')">Rejected</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <% if (leaves.length === 0) { %>
+                    <div class="text-center" style="padding: 40px;">
+                        <p class="text-muted mb-0">No leave applications found</p>
+                    </div>
+                <% } else { %>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Leave Period</th>
+                                <th>Duration</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Applied</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% leaves.forEach(leave => { 
+                                const startDate = new Date(leave.startDate);
+                                const endDate = new Date(leave.endDate);
+                                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                            %>
+                            <tr class="leave-row" data-status="<%= leave.status %>">
+                                <td>
+                                    <div><strong><%= leave.employeeName %></strong></div>
+                                    <div class="text-muted"><%= leave.employeeCode || 'N/A' %></div>
+                                </td>
+                                <td>
+                                    <div><%= startDate.toLocaleDateString() %></div>
+                                    <div class="text-muted">to <%= endDate.toLocaleDateString() %></div>
+                                </td>
+                                <td><%= duration %> day<%= duration > 1 ? 's' : '' %></td>
+                                <td style="max-width: 200px;">
+                                    <div title="<%= leave.reason %>"><%= leave.reason %></div>
+                                </td>
+                                <td>
+                                    <% if (leave.status === 'pending') { %>
+                                        <span class="badge badge-warning">Pending</span>
+                                    <% } else if (leave.status === 'approved') { %>
+                                        <span class="badge badge-success">Approved</span>
+                                        <% if (leave.reviewedBy) { %>
+                                            <div class="text-muted" style="font-size: 11px;">by <%= leave.reviewedBy %></div>
+                                        <% } %>
+                                    <% } else { %>
+                                        <span class="badge badge-danger">Rejected</span>
+                                        <% if (leave.reviewedBy) { %>
+                                            <div class="text-muted" style="font-size: 11px;">by <%= leave.reviewedBy %></div>
+                                        <% } %>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div><%= new Date(leave.appliedAt).toLocaleDateString() %></div>
+                                    <div class="text-muted"><%= new Date(leave.appliedAt).toLocaleTimeString() %></div>
+                                </td>
+                                <td>
+                                    <% if (leave.status === 'pending') { %>
+                                        <div class="d-flex gap-2">
+                                            <form method="POST" action="/update-leave/<%= leave._id %>" style="display: inline;">
+                                                <input type="hidden" name="status" value="approved">
+                                                <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approve this leave request?')">
+                                                    Approve
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="/update-leave/<%= leave._id %>" style="display: inline;">
+                                                <input type="hidden" name="status" value="rejected">
+                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this leave request?')">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="text-muted">Reviewed</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterLeaves(status) {
+            const rows = document.querySelectorAll('.leave-row');
+            const buttons = document.querySelectorAll('.btn-secondary');
+            
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('btn-primary'));
+            buttons.forEach(btn => btn.classList.add('btn-secondary'));
+            event.target.classList.remove('btn-secondary');
+            event.target.classList.add('btn-primary');
+            
+            // Filter rows
+            rows.forEach(row => {
+                if (status === 'all' || row.dataset.status === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Leave Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">Leave Management System</div>
+            <div class="navbar-nav">
+                <a href="/employee-dashboard" class="nav-link active">Dashboard</a>
+                <a href="/apply-leave" class="nav-link">Apply Leave</a>
+                <a href="/change-password" class="nav-link">Change Password</a>
+                <a href="/chat" class="nav-link">Team Chat</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Welcome Header -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h1 class="mb-1">Welcome, <%= userName %></h1>
+                <p class="text-muted mb-0">Manage your leave applications</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-gold mb-2"><%= leaves.length %></h3>
+                        <p class="text-muted mb-0">Total Applications</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-warning mb-2"><%= leaves.filter(l => l.status === 'pending').length %></h3>
+                        <p class="text-muted mb-0">Pending</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-success mb-2"><%= leaves.filter(l => l.status === 'approved').length %></h3>
+                        <p class="text-muted mb-0">Approved</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-danger mb-2"><%= leaves.filter(l => l.status === 'rejected').length %></h3>
+                        <p class="text-muted mb-0">Rejected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Applications -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">My Leave Applications</h3>
+                <a href="/apply-leave" class="btn btn-gold">Apply New Leave</a>
+            </div>
+            <div class="card-body">
+                <% if (leaves.length === 0) { %>
+                    <div class="text-center" style="padding: 40px;">
+                        <p class="text-muted mb-3">No leave applications found</p>
+                        <a href="/apply-leave" class="btn btn-gold">Apply for Leave</a>
+                    </div>
+                <% } else { %>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Leave Period</th>
+                                <th>Duration</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Applied On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% leaves.forEach(leave => { 
+                                const startDate = new Date(leave.startDate);
+                                const endDate = new Date(leave.endDate);
+                                const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                            %>
+                            <tr>
+                                <td>
+                                    <div><strong><%= startDate.toLocaleDateString() %></strong></div>
+                                    <div class="text-muted">to <%= endDate.toLocaleDateString() %></div>
+                                </td>
+                                <td><%= duration %> day<%= duration > 1 ? 's' : '' %></td>
+                                <td><%= leave.reason %></td>
+                                <td>
+                                    <% if (leave.status === 'pending') { %>
+                                        <span class="badge badge-warning">Pending</span>
+                                    <% } else if (leave.status === 'approved') { %>
+                                        <span class="badge badge-success">Approved</span>
+                                    <% } else { %>
+                                        <span class="badge badge-danger">Rejected</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div><%= new Date(leave.appliedAt).toLocaleDateString() %></div>
+                                    <div class="text-muted"><%= new Date(leave.appliedAt).toLocaleTimeString() %></div>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

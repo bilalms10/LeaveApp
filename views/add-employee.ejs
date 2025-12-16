@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Employee - Leave Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">Leave Management System</div>
+            <div class="navbar-nav">
+                <a href="/lead-dashboard" class="nav-link">Dashboard</a>
+                <a href="/employees" class="nav-link">Employees</a>
+                <a href="/add-employee" class="nav-link active">Add Employee</a>
+                <a href="/chat" class="nav-link">Team Chat</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-sm">
+        <!-- Header -->
+        <div class="card mb-4" style="animation: fadeInUp 0.6s ease-out;">
+            <div class="card-header">
+                <h1 class="mb-1">Add New Employee</h1>
+                <p class="text-muted mb-0">Create a new employee account in the system</p>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="card" style="animation: fadeInUp 0.6s ease-out 0.2s both;">
+            <div class="card-body">
+                <% if (error) { %>
+                    <div class="alert alert-error"><%= error %></div>
+                <% } %>
+                
+                <% if (success) { %>
+                    <div class="alert alert-success"><%= success %></div>
+                <% } %>
+                
+                <div class="alert" style="background-color: var(--gold-light); color: var(--gold-dark); border-color: var(--gold-primary);">
+                    <strong>🔑 Default Login Credentials:</strong>
+                    <p style="margin: 8px 0 0 0;">New employees will be created with default password: <strong>password</strong><br>
+                    They can change it after first login using the "Change Password" option.</p>
+                </div>
+                
+                <form method="POST" action="/add-employee">
+                    <div class="row">
+                        <div class="col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="name">
+                                    <span style="margin-right: 8px;">👤</span>Full Name *
+                                </label>
+                                <input type="text" id="name" name="name" class="form-control" placeholder="Enter full name" required>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="employeeId">
+                                    <span style="margin-right: 8px;">🆔</span>Employee ID *
+                                </label>
+                                <input type="text" id="employeeId" name="employeeId" class="form-control" placeholder="e.g., RW/3001" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="email">
+                                    <span style="margin-right: 8px;">📧</span>Email Address *
+                                </label>
+                                <input type="email" id="email" name="email" class="form-control" placeholder="employee@railwire.co.in" required>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="phone">
+                                    <span style="margin-right: 8px;">📱</span>Phone Number
+                                </label>
+                                <input type="tel" id="phone" name="phone" class="form-control" placeholder="e.g., 9876543210">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="dateOfJoining">
+                            <span style="margin-right: 8px;">📅</span>Date of Joining *
+                        </label>
+                        <input type="date" id="dateOfJoining" name="dateOfJoining" class="form-control" required style="max-width: 250px;">
+                    </div>
+                    
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-gold">
+                            <span style="margin-right: 8px;">➕</span>Add Employee
+                        </button>
+                        <a href="/employees" class="btn btn-secondary">
+                            <span style="margin-right: 8px;">↩️</span>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mt-4" style="animation: fadeInUp 0.6s ease-out 0.4s both;">
+            <div class="card-header">
+                <h3 class="mb-0">📊 Quick Guidelines</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-3">
+                        <div style="padding: 16px; background: var(--primary-blue-light); border-radius: 8px; text-align: center;">
+                            <div style="font-size: 28px; margin-bottom: 8px;">🔐</div>
+                            <div style="font-size: 13px; color: var(--primary-blue); font-weight: 600;">SECURE LOGIN</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Default password provided</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div style="padding: 16px; background: var(--success-green-light); border-radius: 8px; text-align: center;">
+                            <div style="font-size: 28px; margin-bottom: 8px;">✅</div>
+                            <div style="font-size: 13px; color: var(--success-green); font-weight: 600;">INSTANT ACCESS</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Ready to use immediately</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div style="padding: 16px; background: var(--gold-light); border-radius: 8px; text-align: center;">
+                            <div style="font-size: 28px; margin-bottom: 8px;">📋</div>
+                            <div style="font-size: 13px; color: var(--gold-dark); font-weight: 600;">LEAVE SYSTEM</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Can apply for leaves</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set maximum date to today for joining date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateOfJoining').max = today;
+        
+        // Email validation
+        document.getElementById('email').addEventListener('input', function() {
+            const email = this.value;
+            const isValid = email.includes('@') && email.includes('.');
+            this.style.borderColor = isValid ? 'var(--success-green)' : 'var(--error-red)';
+        });
+        
+        // Employee ID format validation
+        document.getElementById('employeeId').addEventListener('input', function() {
+            const empId = this.value;
+            const isValid = empId.includes('/') && empId.length >= 5;
+            this.style.borderColor = isValid ? 'var(--success-green)' : 'var(--warning-yellow)';
+        });
+        
+        // Phone number validation
+        document.getElementById('phone').addEventListener('input', function() {
+            const phone = this.value.replace(/\D/g, ''); // Remove non-digits
+            this.value = phone;
+            const isValid = phone.length === 10;
+            this.style.borderColor = isValid ? 'var(--success-green)' : phone.length > 0 ? 'var(--warning-yellow)' : '';
+        });
+    </script>
+</body>
+</html>

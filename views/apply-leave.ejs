@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply Leave - Leave Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">Leave Management System</div>
+            <div class="navbar-nav">
+                <a href="/employee-dashboard" class="nav-link">Dashboard</a>
+                <a href="/apply-leave" class="nav-link active">Apply Leave</a>
+                <a href="/change-password" class="nav-link">Change Password</a>
+                <a href="/chat" class="nav-link">Team Chat</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-sm">
+        <!-- Header -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h1 class="mb-1">Apply for Leave</h1>
+                <p class="text-muted mb-0">Submit a new leave request</p>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="/apply-leave">
+                    <div class="row">
+                        <div class="col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="startDate">Start Date</label>
+                                <input type="date" id="startDate" name="startDate" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="endDate">End Date</label>
+                                <input type="date" id="endDate" name="endDate" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="reason">Reason for Leave</label>
+                        <textarea id="reason" name="reason" class="form-control" rows="4" placeholder="Please provide the reason for your leave request..." required></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary">Submit Leave Request</button>
+                        <a href="/employee-dashboard" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').min = today;
+        document.getElementById('endDate').min = today;
+        
+        // Update end date minimum when start date changes
+        document.getElementById('startDate').addEventListener('change', function() {
+            document.getElementById('endDate').min = this.value;
+        });
+    </script>
+</body>
+</html>

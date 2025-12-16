@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees - Leave Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">Leave Management System</div>
+            <div class="navbar-nav">
+                <a href="/lead-dashboard" class="nav-link">Dashboard</a>
+                <a href="/employees" class="nav-link active">Employees</a>
+                <a href="/add-employee" class="nav-link">Add Employee</a>
+                <a href="/chat" class="nav-link">Team Chat</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="card mb-4" style="animation: fadeInUp 0.6s ease-out;">
+            <div class="card-header">
+                <div>
+                    <h1 class="mb-1">Employee Management</h1>
+                    <p class="text-muted mb-0">Manage employee accounts and reset passwords</p>
+                </div>
+                <a href="/add-employee" class="btn btn-gold">
+                    <span style="margin-right: 8px;">➕</span>Add New Employee
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-4">
+                <div class="card text-center" style="animation: fadeInUp 0.6s ease-out 0.2s both;">
+                    <div class="card-body">
+                        <h2 class="text-gold mb-2 pulse-animation"><%= employees.length %></h2>
+                        <p class="text-muted mb-0">Total Employees</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card text-center" style="animation: fadeInUp 0.6s ease-out 0.3s both;">
+                    <div class="card-body">
+                        <h2 class="text-primary mb-2"><%= employees.filter(e => e.dateOfJoining && new Date(e.dateOfJoining) > new Date(Date.now() - 30*24*60*60*1000)).length %></h2>
+                        <p class="text-muted mb-0">New This Month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card text-center" style="animation: fadeInUp 0.6s ease-out 0.4s both;">
+                    <div class="card-body">
+                        <h2 class="text-success mb-2"><%= employees.filter(e => e.dateOfJoining && new Date().getFullYear() - new Date(e.dateOfJoining).getFullYear() >= 1).length %></h2>
+                        <p class="text-muted mb-0">Senior (1+ Years)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employees Grid -->
+        <% if (employees.length === 0) { %>
+            <div class="card" style="animation: fadeInUp 0.6s ease-out 0.5s both;">
+                <div class="card-body text-center" style="padding: 60px;">
+                    <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;">👥</div>
+                    <h3 class="text-muted mb-3">No Employees Found</h3>
+                    <p class="text-muted mb-4">No employees are currently registered in the system.</p>
+                    <a href="/add-employee" class="btn btn-gold">Add First Employee</a>
+                </div>
+            </div>
+        <% } else { %>
+            <div class="row">
+                <% employees.forEach((employee, index) => { %>
+                <div class="col-3 mb-4">
+                    <div class="card employee-card">
+                        <div class="card-body">
+                            <!-- Employee Header -->
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="employee-avatar" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 16px; font-size: 18px;">
+                                    <%= employee.name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() %>
+                                </div>
+                                <div class="employee-info">
+                                    <h4 class="mb-1" style="color: var(--text-primary);"><%= employee.name %></h4>
+                                    <p class="text-gold mb-0" style="font-weight: 600;"><%= employee.employeeId || 'N/A' %></p>
+                                </div>
+                            </div>
+                            
+                            <!-- Employee Details -->
+                            <div class="employee-details mb-3" style="padding: 12px; border-radius: 8px; background: var(--bg-secondary);">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted" style="font-size: 12px; font-weight: 500;">📧 EMAIL</span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 12px; word-break: break-all;">
+                                    <%= employee.email %>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted" style="font-size: 12px; font-weight: 500;">📱 PHONE</span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 12px;">
+                                    <%= employee.phone || 'Not provided' %>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted" style="font-size: 12px; font-weight: 500;">📅 JOINED</span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-primary); margin-bottom: 12px;">
+                                    <%= employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString() : 'Not specified' %>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted" style="font-size: 12px; font-weight: 500;">👤 STATUS</span>
+                                    <span class="badge badge-success" style="text-transform: capitalize;">Active</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Button -->
+                            <form method="POST" action="/reset-password/<%= employee._id %>">
+                                <button type="submit" class="btn btn-danger reset-btn" style="width: 100%; font-weight: 600;" 
+                                        onclick="return confirm('Reset password for <%= employee.name %>?\n\nNew password will be: password\n\nThe employee will need to change it on next login.')">
+                                    🔄 Reset Password
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Card Footer with Gradient -->
+                        <div style="height: 4px; background: linear-gradient(90deg, var(--primary-blue), var(--gold-primary)); border-radius: 0 0 8px 8px;"></div>
+                    </div>
+                </div>
+                <% }) %>
+            </div>
+        <% } %>
+    </div>
+
+    <script>
+        // Add loading animation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Stagger animation for employee cards
+            const cards = document.querySelectorAll('.employee-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${0.6 + (index * 0.1)}s`;
+            });
+            
+            // Add hover sound effect (optional)
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Add click ripple effect to buttons
+            const buttons = document.querySelectorAll('.reset-btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.cssText = `
+                        position: absolute;
+                        width: ${size}px;
+                        height: ${size}px;
+                        left: ${x}px;
+                        top: ${y}px;
+                        background: rgba(255, 255, 255, 0.3);
+                        border-radius: 50%;
+                        transform: scale(0);
+                        animation: ripple 0.6s linear;
+                        pointer-events: none;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+        });
+        
+        // Add ripple animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
