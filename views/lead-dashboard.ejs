@@ -10,8 +10,13 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="navbar-content">
-            <div class="navbar-brand">Leave Management System</div>
-            <div class="navbar-nav">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div class="navbar-brand">Leave Management System</div>
+                <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                    <span id="menuIcon">☰</span>
+                </button>
+            </div>
+            <div class="navbar-nav" id="mobileNav">
                 <a href="/lead-dashboard" class="nav-link active">Dashboard</a>
                 <a href="/employees" class="nav-link">Employees</a>
                 <a href="/add-employee" class="nav-link">Add Employee</a>
@@ -174,6 +179,37 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        function toggleMobileMenu() {
+            const nav = document.getElementById('mobileNav');
+            const icon = document.getElementById('menuIcon');
+            
+            if (nav.classList.contains('mobile-hidden')) {
+                nav.classList.remove('mobile-hidden');
+                icon.innerHTML = '✕';
+            } else {
+                nav.classList.add('mobile-hidden');
+                icon.innerHTML = '☰';
+            }
+        }
+        
+        document.querySelectorAll('.nav-link, .btn').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('mobileNav').classList.add('mobile-hidden');
+                    document.getElementById('menuIcon').innerHTML = '☰';
+                }
+            });
+        });
+        
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                document.getElementById('mobileNav').classList.remove('mobile-hidden');
+                document.getElementById('menuIcon').innerHTML = '☰';
+            }
+        });
     </script>
 </body>
 </html>
