@@ -11,7 +11,6 @@ const connectDB = async () => {
             maxIdleTimeMS: parseInt(process.env.MONGODB_MAX_IDLE_TIME) || 30000,
             serverSelectionTimeoutMS: parseInt(process.env.MONGODB_SERVER_SELECTION_TIMEOUT) || 5000,
             socketTimeoutMS: 45000,
-            bufferMaxEntries: 0,
             retryWrites: true,
             w: 'majority'
         };
