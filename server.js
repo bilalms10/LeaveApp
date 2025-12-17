@@ -27,7 +27,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/leave-management'
+        mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://mohdbilal_db_user:mohdbilal123@bilalcluster.q2ynbwr.mongodb.net/leave_management?retryWrites=true&w=majority&appName=BilalCluster'
     }),
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
