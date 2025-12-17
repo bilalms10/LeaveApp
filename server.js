@@ -2,63 +2,93 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const compression = require('compression');
+const helmet = require('helmet');
 const path = require('path');
+const cors = require('cors');
 const connectDB = require('./config/database');
+const { swaggerUi, specs } = require('./swagger');
+const apiRoutes = require('./routes/api');
 
 const app = express();
 
-// Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// Performance & Security Middleware
+app.use(helmet());
+app.use(compression());
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    credentials: true
+}));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(session({
-    secret: 'leave-management-secret',
+    secret: process.env.SESSION_SECRET || 'leave-management-secret',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/leave-management'
+    }),
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+    }
 }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'));
 
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
 // MongoDB Atlas connection
 connectDB();
 
-// User Schema
+// User Schema with indexes
 const userSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    password: String,
-    role: { type: String, enum: ['employee', 'lead'], default: 'employee' },
-    employeeId: String,
+    name: { type: String, required: true, index: true },
+    email: { type: String, required: true, unique: true, index: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ['employee', 'lead'], default: 'employee', index: true },
+    employeeId: { type: String, required: true, unique: true, index: true },
     phone: String,
-    dateOfJoining: Date
-});
+    dateOfJoining: { type: Date, index: true }
+}, { timestamps: true });
 
-// Leave Schema
+// Leave Schema with indexes
 const leaveSchema = new mongoose.Schema({
-    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    employeeName: String,
-    employeeCode: String,
-    startDate: Date,
-    endDate: Date,
-    reason: String,
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-    appliedAt: { type: Date, default: Date.now },
+    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    employeeName: { type: String, required: true },
+    employeeCode: { type: String, required: true },
+    startDate: { type: Date, required: true, index: true },
+    endDate: { type: Date, required: true, index: true },
+    reason: { type: String, required: true },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
+    appliedAt: { type: Date, default: Date.now, index: true },
     reviewedBy: String,
     reviewedAt: Date
-});
+}, { timestamps: true });
 
-// Chat Schema
+// Compound indexes for common queries
+leaveSchema.index({ employeeId: 1, status: 1 });
+leaveSchema.index({ status: 1, startDate: 1 });
+
+// Chat Schema with indexes
 const chatSchema = new mongoose.Schema({
-    senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    senderName: String,
-    senderRole: String,
-    message: String,
-    timestamp: { type: Date, default: Date.now }
-});
+    senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    senderName: { type: String, required: true },
+    senderRole: { type: String, required: true },
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now, index: true }
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 const Leave = mongoose.model('Leave', leaveSchema);
 const Chat = mongoose.model('Chat', chatSchema);
+
+// API Routes (moved after model definitions)
+app.use('/api', apiRoutes(User, Leave, Chat));
 
 // Auth middleware
 const requireAuth = (req, res, next) => {
@@ -85,21 +115,26 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    
-    if (user && await bcrypt.compare(password, user.password)) {
-        req.session.userId = user._id;
-        req.session.userRole = user.role;
-        req.session.userName = user.name;
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email }).select('+password').lean();
         
-        if (user.role === 'lead') {
-            res.redirect('/lead-dashboard');
+        if (user && await bcrypt.compare(password, user.password)) {
+            req.session.userId = user._id;
+            req.session.userRole = user.role;
+            req.session.userName = user.name;
+            
+            if (user.role === 'lead') {
+                res.redirect('/lead-dashboard');
+            } else {
+                res.redirect('/employee-dashboard');
+            }
         } else {
-            res.redirect('/employee-dashboard');
+            res.render('login', { error: 'Invalid credentials' });
         }
-    } else {
-        res.render('login', { error: 'Invalid credentials' });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.render('login', { error: 'Login failed. Please try again.' });
     }
 });
 
@@ -108,44 +143,68 @@ app.get('/add-employee', requireAuth, requireLead, (req, res) => {
 });
 
 app.post('/add-employee', requireAuth, requireLead, async (req, res) => {
-    const { name, email, employeeId, phone, dateOfJoining } = req.body;
-    
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-        return res.render('add-employee', { 
+    try {
+        const { name, email, employeeId, phone, dateOfJoining } = req.body;
+        
+        const existingUser = await User.findOne({ 
+            $or: [{ email }, { employeeId }] 
+        }).lean();
+        
+        if (existingUser) {
+            return res.render('add-employee', { 
+                userName: req.session.userName, 
+                error: existingUser.email === email ? 'Email already exists' : 'Employee ID already exists', 
+                success: null 
+            });
+        }
+        
+        const hashedPassword = await bcrypt.hash('password', 10);
+        
+        const user = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: 'employee',
+            employeeId,
+            phone,
+            dateOfJoining: new Date(dateOfJoining)
+        });
+        
+        await user.save();
+        res.render('add-employee', { 
             userName: req.session.userName, 
-            error: 'Email already exists', 
+            error: null, 
+            success: 'Employee added successfully! Default password: password' 
+        });
+    } catch (error) {
+        console.error('Add employee error:', error);
+        res.render('add-employee', { 
+            userName: req.session.userName, 
+            error: 'Failed to add employee. Please try again.', 
             success: null 
         });
     }
-    
-    const hashedPassword = await bcrypt.hash('password', 10);
-    
-    const user = new User({
-        name,
-        email,
-        password: hashedPassword,
-        role: 'employee',
-        employeeId,
-        phone,
-        dateOfJoining: new Date(dateOfJoining)
-    });
-    
-    await user.save();
-    res.render('add-employee', { 
-        userName: req.session.userName, 
-        error: null, 
-        success: 'Employee added successfully! Default password: password' 
-    });
 });
 
 // Employee Routes
 app.get('/employee-dashboard', requireAuth, async (req, res) => {
-    const leaves = await Leave.find({ employeeId: req.session.userId });
-    res.render('employee-dashboard', { 
-        userName: req.session.userName,
-        leaves 
-    });
+    try {
+        const leaves = await Leave.find({ employeeId: req.session.userId })
+            .sort({ appliedAt: -1 })
+            .limit(50)
+            .lean();
+        res.render('employee-dashboard', { 
+            userName: req.session.userName,
+            leaves 
+        });
+    } catch (error) {
+        console.error('Employee dashboard error:', error);
+        res.render('employee-dashboard', { 
+            userName: req.session.userName,
+            leaves: [],
+            error: 'Failed to load dashboard data'
+        });
+    }
 });
 
 app.get('/apply-leave', requireAuth, (req, res) => {
@@ -153,20 +212,25 @@ app.get('/apply-leave', requireAuth, (req, res) => {
 });
 
 app.post('/apply-leave', requireAuth, async (req, res) => {
-    const { startDate, endDate, reason } = req.body;
-    const user = await User.findById(req.session.userId);
-    
-    const leave = new Leave({
-        employeeId: req.session.userId,
-        employeeName: req.session.userName,
-        employeeCode: user.employeeId,
-        startDate,
-        endDate,
-        reason
-    });
-    
-    await leave.save();
-    res.redirect('/employee-dashboard');
+    try {
+        const { startDate, endDate, reason } = req.body;
+        const user = await User.findById(req.session.userId).select('employeeId').lean();
+        
+        const leave = new Leave({
+            employeeId: req.session.userId,
+            employeeName: req.session.userName,
+            employeeCode: user.employeeId,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            reason
+        });
+        
+        await leave.save();
+        res.redirect('/employee-dashboard');
+    } catch (error) {
+        console.error('Apply leave error:', error);
+        res.redirect('/employee-dashboard?error=Failed to apply leave');
+    }
 });
 
 app.get('/change-password', requireAuth, (req, res) => {
@@ -207,19 +271,44 @@ app.post('/change-password', requireAuth, async (req, res) => {
 
 // Lead Routes
 app.get('/lead-dashboard', requireAuth, requireLead, async (req, res) => {
-    const leaves = await Leave.find().populate('employeeId');
-    res.render('lead-dashboard', { 
-        userName: req.session.userName,
-        leaves 
-    });
+    try {
+        const leaves = await Leave.find()
+            .populate('employeeId', 'name email employeeId')
+            .sort({ appliedAt: -1 })
+            .limit(100)
+            .lean();
+        res.render('lead-dashboard', { 
+            userName: req.session.userName,
+            leaves 
+        });
+    } catch (error) {
+        console.error('Lead dashboard error:', error);
+        res.render('lead-dashboard', { 
+            userName: req.session.userName,
+            leaves: [],
+            error: 'Failed to load dashboard data'
+        });
+    }
 });
 
 app.get('/employees', requireAuth, requireLead, async (req, res) => {
-    const employees = await User.find({ role: 'employee' }).sort({ name: 1 });
-    res.render('employees', { 
-        userName: req.session.userName,
-        employees 
-    });
+    try {
+        const employees = await User.find({ role: 'employee' })
+            .select('name email employeeId phone dateOfJoining')
+            .sort({ name: 1 })
+            .lean();
+        res.render('employees', { 
+            userName: req.session.userName,
+            employees 
+        });
+    } catch (error) {
+        console.error('Employees list error:', error);
+        res.render('employees', { 
+            userName: req.session.userName,
+            employees: [],
+            error: 'Failed to load employees'
+        });
+    }
 });
 
 app.post('/reset-password/:id', requireAuth, requireLead, async (req, res) => {
@@ -238,15 +327,53 @@ app.post('/update-leave/:id', requireAuth, requireLead, async (req, res) => {
     res.redirect('/lead-dashboard');
 });
 
+// Calendar Route
+app.get('/calendar', requireAuth, async (req, res) => {
+    try {
+        const leaves = await Leave.find({ status: 'approved' })
+            .populate('employeeId', 'name employeeId')
+            .select('startDate endDate employeeName employeeCode')
+            .sort({ startDate: 1 })
+            .lean();
+        res.render('calendar', { 
+            userName: req.session.userName,
+            userRole: req.session.userRole,
+            leaves 
+        });
+    } catch (error) {
+        console.error('Calendar error:', error);
+        res.render('calendar', { 
+            userName: req.session.userName,
+            userRole: req.session.userRole,
+            leaves: [],
+            error: 'Failed to load calendar data'
+        });
+    }
+});
+
 // Chat Routes
 app.get('/chat', requireAuth, async (req, res) => {
-    const messages = await Chat.find().sort({ timestamp: -1 }).limit(50);
-    res.render('chat', { 
-        userName: req.session.userName,
-        userRole: req.session.userRole,
-        userId: req.session.userId,
-        messages: messages.reverse()
-    });
+    try {
+        const messages = await Chat.find()
+            .sort({ timestamp: -1 })
+            .limit(50)
+            .lean();
+        res.render('chat', { 
+            userName: req.session.userName,
+            userRole: req.session.userRole,
+            userId: req.session.userId,
+            messages: messages.reverse()
+        });
+    } catch (error) {
+        console.error('Chat error:', error);
+        res.render('chat', { 
+            userName: req.session.userName,
+            userRole: req.session.userRole,
+            userId: req.session.userId,
+            messages: [],
+            error: 'Failed to load chat messages'
+        });
+    }
 });
 
 app.post('/chat', requireAuth, async (req, res) => {

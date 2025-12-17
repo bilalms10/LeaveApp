@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Calendar</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .calendar-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-nav { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #ddd; border: 1px solid #ddd; }
+        .calendar-day { background: white; padding: 10px; min-height: 100px; position: relative; }
+        .calendar-day.other-month { background: #f5f5f5; color: #999; }
+        .calendar-day.today { background: #e3f2fd; }
+        .day-number { font-weight: bold; margin-bottom: 5px; }
+        .leave-item { background: var(--primary-color); color: white; padding: 2px 5px; margin: 1px 0; border-radius: 3px; font-size: 11px; }
+        .leave-approved { background: #4caf50; }
+        .leave-pending { background: #ff9800; }
+        .leave-rejected { background: #f44336; }
+        .calendar-legend { display: flex; gap: 20px; margin-bottom: 20px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-color { width: 15px; height: 15px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">Leave Management</div>
+        <div class="nav-links">
+            <a href="/<%= userRole %>-dashboard">Dashboard</a>
+            <a href="/calendar" class="active">Calendar</a>
+            <a href="/chat">Chat</a>
+            <% if (userRole === 'lead') { %>
+                <a href="/employees">Employees</a>
+            <% } %>
+            <a href="/logout">Logout</a>
+        </div>
+        <div class="mobile-menu-toggle">☰</div>
+    </nav>
+
+    <div class="calendar-container">
+        <h2>Team Leave Calendar</h2>
+        
+        <div class="calendar-legend">
+            <div class="legend-item">
+                <div class="legend-color leave-approved"></div>
+                <span>Approved</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color leave-pending"></div>
+                <span>Pending</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color leave-rejected"></div>
+                <span>Rejected</span>
+            </div>
+        </div>
+
+        <div class="calendar-header">
+            <button class="calendar-nav" onclick="changeMonth(-1)">← Previous</button>
+            <h3 id="currentMonth"></h3>
+            <button class="calendar-nav" onclick="changeMonth(1)">Next →</button>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid">
+            <div class="calendar-day"><strong>Sun</strong></div>
+            <div class="calendar-day"><strong>Mon</strong></div>
+            <div class="calendar-day"><strong>Tue</strong></div>
+            <div class="calendar-day"><strong>Wed</strong></div>
+            <div class="calendar-day"><strong>Thu</strong></div>
+            <div class="calendar-day"><strong>Fri</strong></div>
+            <div class="calendar-day"><strong>Sat</strong></div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        const leaves = <%- JSON.stringify(leaves) %>;
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('currentMonth').textContent = 
+                new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendarGrid');
+            
+            // Clear existing days (keep headers)
+            while (grid.children.length > 7) {
+                grid.removeChild(grid.lastChild);
+            }
+
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                grid.appendChild(day);
+            }
+
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                
+                const today = new Date();
+                if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                    dayElement.classList.add('today');
+                }
+
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'day-number';
+                dayNumber.textContent = day;
+                dayElement.appendChild(dayNumber);
+
+                // Add leaves for this day
+                const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                leaves.forEach(leave => {
+                    const startDate = new Date(leave.startDate).toISOString().split('T')[0];
+                    const endDate = new Date(leave.endDate).toISOString().split('T')[0];
+                    
+                    if (currentDateStr >= startDate && currentDateStr <= endDate) {
+                        const leaveItem = document.createElement('div');
+                        leaveItem.className = `leave-item leave-${leave.status}`;
+                        leaveItem.textContent = leave.employeeName.split(' ')[0];
+                        leaveItem.title = `${leave.employeeName} - ${leave.reason}`;
+                        dayElement.appendChild(leaveItem);
+                    }
+                });
+
+                grid.appendChild(dayElement);
+            }
+        }
+
+        function changeMonth(direction) {
+            currentDate.setMonth(currentDate.getMonth() + direction);
+            renderCalendar();
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>
